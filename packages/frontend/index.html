@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#1a3a5c" />
+    <meta name="description" content="ElderCare — Medication Management Platform for elderly individuals, caretakers, and family members." />
+    <meta name="color-scheme" content="light dark" />
+    <!-- Preconnect for performance -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <title>ElderCare — Medication Management</title>
+    <!-- Accessibility: skip to main content -->
+    <style>
+      .skip-link {
+        position: absolute;
+        top: -40px;
+        left: 0;
+        background: #1a3a5c;
+        color: #ffffff;
+        padding: 8px 16px;
+        text-decoration: none;
+        font-weight: 600;
+        z-index: 9999;
+        border-radius: 0 0 4px 0;
+        transition: top 0.2s;
+      }
+      .skip-link:focus {
+        top: 0;
+      }
+      /* Critical CSS for initial render — prevents FOUC */
+      *, *::before, *::after { box-sizing: border-box; }
+      body {
+        margin: 0;
+        font-family: 'Inter', system-ui, -apple-system, sans-serif;
+        background: #f8f9fa;
+        color: #1a1a2e;
+        font-size: 18px; /* Base size for elderly accessibility */
+        line-height: 1.6;
+      }
+      #root { min-height: 100vh; }
+      /* High contrast focus ring — WCAG 2.1 AA */
+      :focus-visible {
+        outline: 3px solid #1a3a5c;
+        outline-offset: 2px;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Skip navigation link for screen readers -->
+    <a class="skip-link" href="#main-content">Skip to main content</a>
+    <div id="root" role="application" aria-label="ElderCare Medication Management Platform"></div>
+    <script type="module" src="/src/main.tsx"></script>
+    <!-- Noscript fallback -->
+    <noscript>
+      <div style="padding: 2rem; text-align: center; font-size: 1.25rem;">
+        <h1>JavaScript Required</h1>
+        <p>ElderCare requires JavaScript to function. Please enable JavaScript in your browser settings.</p>
+      </div>
+    </noscript>
+  </body>
+</html>
