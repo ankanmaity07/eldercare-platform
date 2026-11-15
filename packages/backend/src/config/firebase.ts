@@ -118,8 +118,12 @@ export function initFirebase(): admin.app.App | null {
   }
 
   try {
-    const privateKey = env.FIREBASE_PRIVATE_KEY.includes('PRIVATE KEY')
-      ? env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n')
+    let rawKey = env.FIREBASE_PRIVATE_KEY ? env.FIREBASE_PRIVATE_KEY.trim() : '';
+    if (rawKey.startsWith('"') && rawKey.endsWith('"')) {
+      rawKey = rawKey.slice(1, -1);
+    }
+    const privateKey = rawKey.includes('PRIVATE KEY')
+      ? rawKey.replace(/\\n/g, '\n')
       : null;
 
     if (!privateKey || env.FIREBASE_PROJECT_ID.includes('dev-project')) {
