@@ -5,7 +5,31 @@ import type {
   InteractionCheckResult, HealthInsight, User,
 } from '../types/index.js';
 
-const BASE_URL = import.meta.env.VITE_API_URL ?? '/api';
+/**
+ * Intelligently resolve the backend API URL.
+ * Automatically handles root URLs (e.g. https://xyz.up.railway.app -> https://xyz.up.railway.app/api)
+ * as well as existing /api prefixes and trailing slashes.
+ */
+function resolveApiUrl(): string {
+  const envUrl = (import.meta.env.VITE_API_URL as string | undefined)?.trim();
+
+  // If no VITE_API_URL provided, use relative '/api' (proxied in Vite dev or reverse-proxied)
+  if (!envUrl) {
+    return '/api';
+  }
+
+  // Remove trailing slashes
+  const clean = envUrl.replace(/\/+$/, '');
+
+  // If user provided origin without /api (e.g. https://eldercare.up.railway.app)
+  if (!clean.endsWith('/api')) {
+    return `${clean}/api`;
+  }
+
+  return clean;
+}
+
+const BASE_URL = resolveApiUrl();
 
 export const apiClient = axios.create({
   baseURL: BASE_URL,
@@ -13,7 +37,7 @@ export const apiClient = axios.create({
   headers: { 'Content-Type': 'application/json' },
 });
 
-// Attach JWT to every request
+// Attach JWT Bearer token to every request
 apiClient.interceptors.request.use((config) => {
   const token = useAuthStore.getState().token;
   if (token) {
@@ -22,11 +46,11 @@ apiClient.interceptors.request.use((config) => {
   return config;
 });
 
-// Handle 401 — clear auth and redirect
+// Handle 401 — clear auth and redirect to login
 apiClient.interceptors.response.use(
   (res) => res,
   (err: AxiosError) => {
-    if (err.response?.status === 401) {
+    if (err.response?.status === 401 && !window.location.pathname.includes('/login')) {
       useAuthStore.getState().clearAuth();
       window.location.href = '/login';
     }
@@ -34,7 +58,7 @@ apiClient.interceptors.response.use(
   },
 );
 
-// --- Auth ---
+// --- Auth Endpoints ---
 export const authApi = {
   login: (email: string, passcode: string) =>
     apiClient.post<ApiResponse<{ token: string; user: User }>>('/auth/login', { email, passcode }),
@@ -44,7 +68,7 @@ export const authApi = {
   }) => apiClient.post<ApiResponse<{ token: string; user: User }>>('/auth/register', data),
 };
 
-// --- Medications ---
+// --- Medications Endpoints ---
 export const medicationApi = {
   list: () => apiClient.get<ApiResponse<Medication[]>>('/medications'),
   create: (data: Omit<Medication, 'id' | 'profileId' | 'createdBy' | 'createdAt' | 'updatedAt' | 'isActive'>) =>
@@ -54,7 +78,7 @@ export const medicationApi = {
   delete: (id: string) => apiClient.delete<ApiResponse<never>>(`/medications/${id}`),
 };
 
-// --- Adherence ---
+// --- Adherence Endpoints ---
 export const adherenceApi = {
   log: (data: { medicationId: string; scheduledTime: string; status: string; notes?: string }) =>
     apiClient.post<ApiResponse<AdherenceLog>>('/adherence', data),
@@ -66,7 +90,7 @@ export const adherenceApi = {
     apiClient.get<ApiResponse<{ rate: number }>>(`/adherence/rate?from=${from}&to=${to}`),
 };
 
-// --- Appointments ---
+// --- Appointments Endpoints ---
 export const appointmentApi = {
   list: () => apiClient.get<ApiResponse<Appointment[]>>('/appointments'),
   create: (data: { doctorName: string; specialty?: string; dateTime: string; location?: string; notes?: string }) =>
@@ -78,13 +102,13 @@ export const appointmentApi = {
     apiClient.post<ApiResponse<{ eventId: string }>>('/calendar/sync', { appointmentId, accessToken, refreshToken }),
 };
 
-// --- Gemini AI ---
+// --- Gemini AI Endpoints ---
 export const geminiApi = {
   checkInteractions: () => apiClient.post<ApiResponse<InteractionCheckResult>>('/gemini/interactions'),
   getInsights: () => apiClient.get<ApiResponse<HealthInsight>>('/gemini/insights'),
 };
 
-// --- SOS ---
+// --- SOS Endpoints ---
 export const sosApi = {
   trigger: (triggeredByName: string, location?: string) =>
     apiClient.post<ApiResponse<{ id: string }>>('/sos/trigger', { triggeredByName, location }),

@@ -42,8 +42,13 @@ export default function LoginPage(): JSX.Element {
         toast.error(data.error ?? 'Login failed. Please try again.');
         setLoading(false);
       }
-    } catch {
-      toast.error('Unable to connect. Please check your connection.');
+    } catch (err: unknown) {
+      const axiosError = err as { response?: { data?: { error?: string; message?: string } } };
+      const msg =
+        axiosError.response?.data?.message ||
+        axiosError.response?.data?.error ||
+        'Unable to connect to backend. Please verify your Railway backend URL.';
+      toast.error(msg);
       setLoading(false);
     }
   };
