@@ -8,11 +8,14 @@
   ],
   "scripts": {
     "dev": "concurrently \"npm run dev --workspace=packages/backend\" \"npm run dev --workspace=packages/frontend\"",
-    "build": "npm run build --workspace=packages/backend && npm run build --workspace=packages/frontend",
+    "build": "npm run build --workspace=packages/backend",
+    "build:all": "npm run build --workspace=packages/backend && npm run build --workspace=packages/frontend",
     "build:backend": "npm run build --workspace=packages/backend",
     "build:frontend": "npm run build --workspace=packages/frontend",
+    "build:railway": "npm run build --workspace=packages/backend",
     "start": "node packages/backend/dist/index.js",
     "start:backend": "npm run start --workspace=packages/backend",
+    "start:railway": "node packages/backend/dist/index.js",
     "test": "npm run test --workspace=packages/backend && npm run test --workspace=packages/frontend",
     "lint": "npm run lint --workspace=packages/backend && npm run lint --workspace=packages/frontend",
     "typecheck": "npm run typecheck --workspace=packages/backend && npm run typecheck --workspace=packages/frontend"

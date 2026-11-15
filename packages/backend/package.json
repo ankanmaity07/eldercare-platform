@@ -7,7 +7,11 @@
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
+    "build:backend": "tsc",
+    "build:railway": "tsc",
     "start": "node dist/index.js",
+    "start:backend": "node dist/index.js",
+    "start:railway": "node dist/index.js",
     "test": "vitest run --coverage",
     "test:watch": "vitest",
     "lint": "eslint src --ext .ts --max-warnings 0",
