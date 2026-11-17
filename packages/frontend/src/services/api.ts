@@ -11,7 +11,11 @@ import type {
  * as well as existing /api prefixes and trailing slashes.
  */
 function resolveApiUrl(): string {
-  const envUrl = (import.meta.env.VITE_API_URL as string | undefined)?.trim();
+  const envUrl = (
+    (import.meta.env.VITE_API_URL as string | undefined) ||
+    (import.meta.env.VITE_API_BASE_URL as string | undefined) ||
+    (import.meta.env.VITE_BACKEND_URL as string | undefined)
+  )?.trim();
 
   // If no VITE_API_URL provided, use relative '/api' (proxied in Vite dev or reverse-proxied)
   if (!envUrl) {
