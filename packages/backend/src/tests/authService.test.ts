@@ -33,7 +33,13 @@ vi.mock('../config/firebase.js', () => ({
   auth: {},
 }));
 
-import { hashPasscode, verifyPasscode, signToken, registerUser } from '../services/authService.js';
+import {
+  hashPasscode,
+  verifyPasscode,
+  signToken,
+  registerUser,
+  loginUser,
+} from '../services/authService.js';
 import type { UserProfile } from '../types/index.js';
 
 describe('authService', () => {
@@ -97,6 +103,81 @@ describe('authService', () => {
       expect(result.user.role).toBe('elderly');
       expect((result.user as unknown as Record<string, unknown>)['passcodeHash']).toBeUndefined();
       expect(mockDocSet).toHaveBeenCalled();
+    });
+
+    it('should reject registration if email is already in use', async () => {
+      mockLimitGet.mockResolvedValueOnce({ empty: false });
+
+      await expect(
+        registerUser({
+          name: 'Grandma Mary Duplicate',
+          email: 'mary@care.com',
+          passcode: '889900',
+          role: 'elderly',
+          profileId: 'group-mary-1',
+        }),
+      ).rejects.toThrow('Email already registered');
+    });
+  });
+
+  describe('loginUser', () => {
+    it('should log in with valid credentials and return JWT token', async () => {
+      const passcode = '123456';
+      const passcodeHash = await hashPasscode(passcode);
+
+      const fakeUser: UserProfile = {
+        id: 'usr-10',
+        name: 'John Doe',
+        email: 'john@care.com',
+        role: 'caretaker',
+        profileId: 'group-10',
+        passcodeHash,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        isActive: true,
+      };
+
+      mockLimitGet.mockResolvedValueOnce({
+        empty: false,
+        docs: [{ data: () => fakeUser }],
+      });
+
+      const result = await loginUser({ email: 'john@care.com', passcode });
+      expect(result.token).toBeTruthy();
+      expect(result.user.email).toBe('john@care.com');
+      expect((result.user as unknown as Record<string, unknown>)['passcodeHash']).toBeUndefined();
+    });
+
+    it('should throw an error if the user is not found', async () => {
+      mockLimitGet.mockResolvedValueOnce({ empty: true });
+
+      await expect(
+        loginUser({ email: 'notfound@care.com', passcode: '123456' }),
+      ).rejects.toThrow('Invalid credentials');
+    });
+
+    it('should throw an error if the passcode is incorrect', async () => {
+      const passcodeHash = await hashPasscode('correct-passcode');
+      const fakeUser: UserProfile = {
+        id: 'usr-11',
+        name: 'Alice',
+        email: 'alice@care.com',
+        role: 'family',
+        profileId: 'group-10',
+        passcodeHash,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        isActive: true,
+      };
+
+      mockLimitGet.mockResolvedValueOnce({
+        empty: false,
+        docs: [{ data: () => fakeUser }],
+      });
+
+      await expect(
+        loginUser({ email: 'alice@care.com', passcode: 'wrong-passcode' }),
+      ).rejects.toThrow('Invalid credentials');
     });
   });
 });

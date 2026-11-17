@@ -57,8 +57,9 @@ export async function checkMedicationInteractions(
 
   if (genAI) {
     try {
+      const modelName = process.env['GEMINI_MODEL'] || 'gemini-1.5-flash';
       const model = genAI.getGenerativeModel({
-        model: 'gemini-pro',
+        model: modelName,
         safetySettings,
         generationConfig: { responseMimeType: 'application/json' },
       });
@@ -117,8 +118,9 @@ export async function generateHealthInsights(profileData: {
 }): Promise<HealthInsight> {
   if (genAI) {
     try {
+      const modelName = process.env['GEMINI_MODEL'] || 'gemini-1.5-flash';
       const model = genAI.getGenerativeModel({
-        model: 'gemini-pro',
+        model: modelName,
         safetySettings,
         generationConfig: { responseMimeType: 'application/json' },
       });

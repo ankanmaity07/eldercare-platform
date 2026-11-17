@@ -36,6 +36,7 @@ import {
   createMedication,
   getMedicationsByProfile,
   getMedicationById,
+  updateMedication,
   deleteMedication,
 } from '../services/medicationService.js';
 import type { Medication } from '../types/index.js';
@@ -60,7 +61,7 @@ describe('medicationService', () => {
     expect(mockDocSet).toHaveBeenCalled();
   });
 
-  it('fetches medications by profile ID', async () => {
+  it('fetches medications by profile ID with optional limit', async () => {
     const fakeMed: Medication = {
       ...sampleMedData,
       id: 'med-1',
@@ -72,7 +73,7 @@ describe('medicationService', () => {
       docs: [{ data: () => fakeMed }],
     });
 
-    const result = await getMedicationsByProfile('group-101');
+    const result = await getMedicationsByProfile('group-101', { limit: 10 });
     expect(result).toHaveLength(1);
     expect(result[0]?.name).toBe('Atorvastatin');
   });
@@ -90,6 +91,31 @@ describe('medicationService', () => {
     expect(unauthorized).toBeNull();
   });
 
+  it('updates medication fields when authorized', async () => {
+    mockDocGet.mockResolvedValueOnce({
+      exists: true,
+      data: () => ({ ...sampleMedData, id: 'med-mock-id', profileId: 'group-101' }),
+    });
+
+    const updated = await updateMedication('med-mock-id', 'group-101', {
+      dosage: '40mg',
+      instructions: 'Take with evening meal',
+    });
+
+    expect(updated).not.toBeNull();
+    expect(updated?.dosage).toBe('40mg');
+    expect(updated?.instructions).toBe('Take with evening meal');
+    expect(mockDocUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({ dosage: '40mg' }),
+    );
+  });
+
+  it('returns null when updating non-existent medication or profile mismatch', async () => {
+    mockDocGet.mockResolvedValueOnce({ exists: false });
+    const notFound = await updateMedication('non-existent', 'group-101', { dosage: '40mg' });
+    expect(notFound).toBeNull();
+  });
+
   it('soft-deletes medication by setting isActive to false', async () => {
     mockDocGet.mockResolvedValueOnce({
       exists: true,
@@ -101,5 +127,11 @@ describe('medicationService', () => {
     expect(mockDocUpdate).toHaveBeenCalledWith(
       expect.objectContaining({ isActive: false }),
     );
+  });
+
+  it('returns false when deleting medication with mismatched profile or non-existent document', async () => {
+    mockDocGet.mockResolvedValueOnce({ exists: false });
+    const failed = await deleteMedication('missing', 'group-101');
+    expect(failed).toBe(false);
   });
 });

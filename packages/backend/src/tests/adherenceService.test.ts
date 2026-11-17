@@ -33,6 +33,7 @@ vi.mock('../config/env.js', () => ({
 
 import {
   logAdherence,
+  getAdherenceLogs,
   getAdherenceRate,
   updateAdherenceStatus,
 } from '../services/adherenceService.js';
@@ -54,6 +55,31 @@ describe('adherenceService', () => {
     expect(log.status).toBe('taken');
     expect(log.scheduledTime).toEqual(scheduled);
     expect(mockDocSet).toHaveBeenCalled();
+  });
+
+  it('fetches adherence logs within a date range', async () => {
+    const sampleLog: AdherenceLog = {
+      id: 'log-1',
+      medicationId: 'med-1',
+      profileId: 'group-elder-1',
+      userId: 'usr-1',
+      scheduledTime: new Date('2026-03-01T08:00:00Z'),
+      status: 'taken',
+      createdAt: new Date(),
+    };
+
+    mockQueryGet.mockResolvedValueOnce({
+      docs: [{ data: () => sampleLog }],
+    });
+
+    const logs = await getAdherenceLogs(
+      'group-elder-1',
+      new Date('2026-03-01'),
+      new Date('2026-03-07'),
+    );
+
+    expect(logs).toHaveLength(1);
+    expect(logs[0]?.status).toBe('taken');
   });
 
   it('calculates correct adherence rate percentages', async () => {
@@ -109,5 +135,22 @@ describe('adherenceService', () => {
     expect(mockDocUpdate).toHaveBeenCalledWith(
       expect.objectContaining({ status: 'taken' }),
     );
+  });
+
+  it('returns null when updating status with non-existent log or mismatched profile', async () => {
+    mockDocGet.mockResolvedValueOnce({ exists: false });
+    const notFound = await updateAdherenceStatus('missing-log', 'group-elder-1', 'taken');
+    expect(notFound).toBeNull();
+
+    mockDocGet.mockResolvedValueOnce({
+      exists: true,
+      data: () => ({
+        id: 'adherence-mock-id',
+        profileId: 'different-group',
+        status: 'pending',
+      }),
+    });
+    const unauthorized = await updateAdherenceStatus('adherence-mock-id', 'group-elder-1', 'taken');
+    expect(unauthorized).toBeNull();
   });
 });

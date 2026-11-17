@@ -23,18 +23,19 @@ app.use(
   }),
 );
 
-// Resilient CORS configuration supporting Vercel and Railway
+// Resilient CORS configuration supporting Vercel, Render, and custom domains
 app.use(
   cors({
     origin: (origin, callback) => {
       // Allow requests with no origin (mobile apps, curl, server-to-server)
       if (!origin) return callback(null, true);
 
-      // Allow configured FRONTEND_URL, Vercel deployments, and localhost
+      // Allow configured FRONTEND_URL, Vercel deployments, Render domains, and localhost
       if (
         env.FRONTEND_URL === '*' ||
         origin === env.FRONTEND_URL ||
         /\.vercel\.app$/.test(origin) ||
+        /\.onrender\.com$/.test(origin) ||
         origin.includes('localhost') ||
         origin.includes('127.0.0.1')
       ) {
@@ -60,7 +61,7 @@ app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 // Global rate limiting
 app.use('/api', apiRateLimiter);
 
-// Health check endpoints for Railway, Uptime monitors, and load balancers
+// Health check endpoints for Render, Vercel, uptime monitors, and load balancers
 app.get(['/', '/health', '/api/health'], (_req, res) => {
   res.json({
     status: 'ok',
@@ -83,18 +84,20 @@ app.use('/api/sos', sosRouter);
 // Global error handler (must be last)
 app.use(errorHandler);
 
-// Start background email reminder scheduler
-try {
-  startEmailScheduler();
-} catch (err) {
-  console.warn('[Scheduler] Could not start scheduler:', err);
+// Start background email reminder scheduler and server when not running in test mode
+if (env.NODE_ENV !== 'test') {
+  try {
+    startEmailScheduler();
+  } catch (err) {
+    console.warn('[Scheduler] Could not start scheduler:', err);
+  }
+
+  // Bind to 0.0.0.0 for Render / cloud containers
+  const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : env.PORT;
+
+  app.listen(PORT, '0.0.0.0', () => {
+    console.info(`[Server] ElderCare backend running on 0.0.0.0:${PORT} (${env.NODE_ENV})`);
+  });
 }
-
-// Bind to 0.0.0.0 for Railway / cloud containers
-const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : env.PORT;
-
-app.listen(PORT, '0.0.0.0', () => {
-  console.info(`[Server] ElderCare backend running on 0.0.0.0:${PORT} (${env.NODE_ENV})`);
-});
 
 export default app;
